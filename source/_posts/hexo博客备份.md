@@ -9,9 +9,9 @@ categories:
 
 # 备份步骤
 <!--more-->
-1. 在博客仓库创建分支hexo（或其他）
-2. 设置hexo为默认分支
-3. 创建`.gitignore`文件
+1. 在博客目录下，创建git仓库
+`git init`
+2. 创建`.gitignore`文件
 文件内容：
 ```
 .DS_Store
@@ -22,13 +22,18 @@ node_modules/
 public/
 .deploy*/
 ```
-4.上传至github
-```shell
+3. 将本地与远程仓库关联
+`git remote add origin git@github.com:sjtu-xx/sjtu-xx.github.io.git`
+4. 设置hexo为默认分支
+5. 本地新建hexo分支
+`git checkout -b hexo` 创建新分支
+6. 上传至github
+```bash
 git add .
 git commit -m "blabla"
 git push origin hexo
 ```
-5. hexo g -d 发布博客
+7. hexo g -d 发布博客
 
 ## 恢复步骤
 1. `git clone https://github.com/sjtu-xx/sjtu-xx.github.io.gito`

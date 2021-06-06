@@ -121,12 +121,13 @@ deploy:
 math:
   engine: 'mathjax' # or 'katex'
   mathjax:
-    # src: custom_mathjax_source
+    src: custom_mathjax_source
     config:
       # MathJax config
 
-# search:
-#   path: search.xml
-#   field: post
-#   format: html
-#   limit: 10000
+search:
+  path: search.xml
+  field: post
+  format: html
+  content: true
+  limit: 100

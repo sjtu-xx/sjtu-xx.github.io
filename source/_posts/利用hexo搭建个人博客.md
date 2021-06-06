@@ -97,6 +97,10 @@ https://yanyinhong.github.io/2017/05/02/How-to-insert-image-in-hexo-post/
 通过连接手机运营商网络可以上传
 连接学校的vpn也可以成功上传
 
+## 搜索功能
+`npm install hexo-generator-search --save`
+
+
 ## hexo数学公式
 原生hexo并不支持数学公式，需要安装插件 mathJax。mathJax 是一款运行于浏览器中的开源数学符号渲染引擎，使用 mathJax 可以方便的在浏览器中嵌入数学公式。mathJax 使用网络字体产生高质量的排版，因此可适应各种分辨率，它的显示是基于文本的而非图片，因此显示效果更好。这些公式可以被搜索引擎使用，因此公式里的符号一样可以被搜索引擎检索到。
 

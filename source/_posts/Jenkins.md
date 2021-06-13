@@ -91,4 +91,3 @@ pipeline {
 docker run --rm -u root -p 8080:8080 -v jenkins-data:/Users/xuexuan/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME":/Users/xuexuan/jenkins jenkinsci/blueocean
 ```
 
-

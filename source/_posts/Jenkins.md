@@ -88,6 +88,7 @@ pipeline {
 ## 构建JAVA程序
 
 ```shell
-docker run --rm -u root -p 8080:8080 -v jenkins-data:/Users/xuexuan/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME":/Users/xuexuan/jenkins jenkinsci/blueocean
+docker run --rm -u root -p 8080:8080 -v /Users/xuexuan/jenkins-data:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock -v "$HOME":/home jenkinsci/blueocean
 ```
 
+https://www.jenkins.io/zh/doc/tutorials/build-a-java-app-with-maven/

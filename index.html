@@ -211,7 +211,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2023-03-17 22:32:13 / 修改时间：22:33:34" itemprop="dateCreated datePublished" datetime="2023-03-17T22:32:13+08:00">2023-03-17</time>
+              <time title="创建时间：2023-03-17 22:32:13 / 修改时间：22:35:54" itemprop="dateCreated datePublished" datetime="2023-03-17T22:32:13+08:00">2023-03-17</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -253,6 +253,52 @@
 
       
           <span id="more"></span>
+
+<h2 id="零、序"><a href="#零、序" class="headerlink" title="零、序"></a>零、序</h2><p>在看Effective Java的时候，发现Josh Bloch这个人是真的厉害。想起来之前他写的《Java并发编程实战》，还有Doug Lea等JUC实现者的参与。于是准备好好看看。 </p>
+<p>这本书的中文翻译版看着有点别扭，尝试看全英文的。看的第二本全英文课外书。嘿嘿😁。</p>
+<h2 id="一、浅谈多线程"><a href="#一、浅谈多线程" class="headerlink" title="一、浅谈多线程"></a>一、浅谈多线程</h2><h3 id="1-1-多线程的优势"><a href="#1-1-多线程的优势" class="headerlink" title="1.1 多线程的优势"></a>1.1 多线程的优势</h3><ul>
+<li><strong>充分发挥多处理器的能力</strong> 操作系统调度的基本单位是线程，如果进程只有一个线程，那么</li>
+<li><strong>更方便的建模</strong> 处理一种内容的程序要比处理多个线程的程序更容易</li>
+<li><strong>异步事件的简化处理</strong> 多个线程处理多个请求比同一个线程处理多个请求容易的多</li>
+<li><strong>响应更灵敏的用户界面</strong> 现代GUI工具使用一个EDT（event dispatch thread）线程来代替事件主循环（事件循环放在了线程内部）</li>
+</ul>
+<h3 id="1-2-线程的风险"><a href="#1-2-线程的风险" class="headerlink" title="1.2 线程的风险"></a>1.2 线程的风险</h3><ul>
+<li><strong>线程安全性</strong> 不同线程修改同一变量等。。。</li>
+<li><strong>活跃性问题</strong> 某件正在执行的事情必须执行。不能因为死锁不执行等</li>
+<li><strong>性能问题</strong> 线程创建开销、上下文切换开销。此外，同步机制还会抑制编译器优化，使内存中的数据失效、增加共享内存总线的同步流量。</li>
+</ul>
+<h2 id="二、线程安全性"><a href="#二、线程安全性" class="headerlink" title="二、线程安全性"></a>二、线程安全性</h2><p>编写线程安全的代码，核心在于要对<strong>状态访问操作</strong>进行管理，特别是<strong>共享的</strong>和<strong>可变的</strong>状态的访问。</p>
+<blockquote>
+<p>状态一般是指存储在状态变量中的数据（直接或间接）<br>如：HashMap中的状态除了HashMap本身，还有Map.Entry</p>
+</blockquote>
+<p>Java中的同步机制：<code>synchronized</code>、<code>volatile</code>、显式锁、原子变量</p>
+<h3 id="2-1-定义"><a href="#2-1-定义" class="headerlink" title="2.1 定义"></a>2.1 定义</h3><p>线程安全性的核心是正确性。所谓的正确性，就是某个类的行为与其规范完全一致。因此，线程安全性可以定义为：当多个线程访问某个类时，这个类始终都能表现出正确的行为，那么这个类就是线程安全的。</p>
+<blockquote>
+<p>线程安全类中封装了必要的同步机制，调用者不需要再采取同步机制确保正确性。</p>
+</blockquote>
+<p>无状态对象一定是线程安全的</p>
+<blockquote>
+<p><strong>无状态</strong> 既不包含任何域，也不包含任何对其他类中域的引用</p>
+</blockquote>
+<h3 id="2-2-原子性"><a href="#2-2-原子性" class="headerlink" title="2.2 原子性"></a>2.2 原子性</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NotThreadSafe</span></span><br><span class="line"><span class="keyword">public</span> UnSafeCounting &#123;</span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">long</span> count = <span class="number">0</span>;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">calc</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		++count;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的<code>++count</code>实际包含三个操作：读取、修改、写入。</p>
+<h4 id="竞态条件"><a href="#竞态条件" class="headerlink" title="竞态条件"></a>竞态条件</h4><p><strong>竞态条件</strong>：由于不恰当的执行时序而出现不正确的结果。 最常见的竞态条件类型是“先检查后执行”，即通过一个可能失效的观测结果来进行下一步的操作。</p>
+<h4 id="延迟初始化中的竞态条件"><a href="#延迟初始化中的竞态条件" class="headerlink" title="延迟初始化中的竞态条件"></a>延迟初始化中的竞态条件</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@NotThreadSafe</span> </span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LazyInitRace</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> ExpensiveObject instance = <span class="keyword">null</span>;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> ExpensiveObject <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">if</span> (instance == <span class="keyword">null</span>)</span><br><span class="line">			instance = <span class="keyword">new</span> ExpensiveObject();</span><br><span class="line">		<span class="keyword">return</span> instance;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="复合操作"><a href="#复合操作" class="headerlink" title="复合操作"></a>复合操作</h4><blockquote>
+<p><strong>原子</strong>：如果有两个操作A和B，如果从执行A的线程来看，当另一个线程执行B时，要么B全部执行完，要么B完全不执行，那么A和B对彼此就是原子的。</p>
+<p><strong>原子操作</strong>：对于访问同一个状态的所有操作（包括操作本身）来说，这个操作是一个以原子方式执行的操作。</p>
+</blockquote>
+<p>当在无状态类中增加一个状态时，如果该状态完全由线程安全的对象来管理（如增加一个AtomicLong管理的字段），那么该类仍然是线程安全的。当状态由一个变成多个时，就会复杂的多。</p>
+<blockquote>
+<p>尽量用现有的线程安全对象（如Atomic对象）来管理类的状态。</p>
+</blockquote>
+<h3 id="2-3-锁机制"><a href="#2-3-锁机制" class="headerlink" title="2.3 锁机制"></a>2.3 锁机制</h3><p>当一个类中存在多个状态时，即使这些状态都是由线程安全的类管理的（如都是Atomic的），在很多情况下也不能保证该类是线程安全的，仍然会存在竞态条件。</p>
+<h4 id="内置锁"><a href="#内置锁" class="headerlink" title="内置锁"></a>内置锁</h4><p>同步代码块（<code>synchronized (lock) &#123;&#125;</code>）<br><code>sychronized</code>修饰方法时，默认lock是当前对象（<code>this</code>）。</p>
+<h4 id="重入"><a href="#重入" class="headerlink" title="重入"></a>重入</h4><p>内置锁允许某个线程重复获取一个已经由它自己持有的锁。</p>
+<blockquote>
+<p>每个共享的和可变的变量都应该只由一个锁来保护，从而使维护人员知道是哪个锁。</p>
+</blockquote>
 
       
     </div>

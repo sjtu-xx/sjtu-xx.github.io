@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://sjtu-xx.github.io/2023/03/17/JAVA%E5%B9%B6%E5%8F%91%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%88%98/attachments/9ca5b363c287433240f22abecf7e4866.png">
 <meta property="article:published_time" content="2023-03-17T14:32:13.000Z">
-<meta property="article:modified_time" content="2023-03-19T08:28:03.911Z">
+<meta property="article:modified_time" content="2023-03-21T13:57:21.968Z">
 <meta property="article:author" content="Xue Xuan">
 <meta property="article:tag" content="JAVA">
 <meta property="article:tag" content="多线程">
@@ -225,7 +225,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-03-19 16:28:03" itemprop="dateModified" datetime="2023-03-19T16:28:03+08:00">2023-03-19</time>
+                <time title="修改时间：2023-03-21 21:57:21" itemprop="dateModified" datetime="2023-03-21T21:57:21+08:00">2023-03-21</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -362,6 +362,111 @@
 <p><img src="./attachments/9ca5b363c287433240f22abecf7e4866.png" alt="加锁与可见性"></p>
 <h3 id="3-4-volatile"><a href="#3-4-volatile" class="headerlink" title="3.4 volatile"></a>3.4 volatile</h3><p><code>volatile</code>变量不会被缓存在寄存器或者其他处理器不可见的地方，在读取<code>volatile</code>变量时，总是返回最新写入的值。</p>
 <p>！！不建议过度依赖<code>volatile</code>变量提供的可见性。如果在代码中依赖volatile变量控制状态的可见性，通常比使用锁的代码更脆弱，也更难理解。</p>
+<blockquote>
+<p>仅当volatile变量能简化代码实现以及对同步策略的验证时，才应该使用。如果在验证正确性时，需要对可见性进行复杂的判断，就不要使用volatile。volatile变量的正确使用方式包括：确保他们自身状态的可见性，确保他们所引用的对象的轧辊台的可见性，以及标识一些重要的程序生命周期事件的发生（例如初始化或关闭）。</p>
+</blockquote>
+<p>下面这个例子是volatile的经典用法，检查某个标记以判断是否退出循环。如果使用锁，会是的代码更复杂。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">volatile</span> <span class="keyword">boolean</span> asleep;</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line">	<span class="keyword">while</span> (!asleep)</span><br><span class="line">		countSomeSheep();</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>加锁机制既可以确保可见性，又可以确保原子性，而<code>volatile</code>变量只能确保可见性。</p>
+</blockquote>
+<p>当且仅当满足下列条件时，才应该使用<code>volatile</code>变量：</p>
+<ul>
+<li>对变量的写入操作不依赖变量的当前值，或者能确保只有单个线程更新变量的值</li>
+<li>该变量不会和其他状态变量一起纳入不变性条件中</li>
+<li>在访问变量时不需要加锁</li>
+</ul>
+<h3 id="发布与逸出-publish-and-escape"><a href="#发布与逸出-publish-and-escape" class="headerlink" title="发布与逸出(publish and escape)"></a>发布与逸出(publish and escape)</h3><ul>
+<li><strong>发布</strong>一个对象是指使对象能在当前作用域之外的代码中使用</li>
+<li>当某个不应该发布的对象被发布时，就称为<strong>逸出</strong></li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UnsafeStates</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> String[] states = <span class="keyword">new</span> String[] &#123;<span class="string">&quot;AL&quot;</span>,<span class="string">&quot;AK&quot;</span>&#125;;</span><br><span class="line">	<span class="keyword">public</span> String[] getStates() &#123; <span class="keyword">return</span> states; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>UnsafeStates的任何调用者都能修改states中的内容！！</p>
+<blockquote>
+<p>外部方法：对类C来说，行为并不完全由C来规定的方法，包括其他类中定义的方法以及类C中可以被改写的方法（既不是private也不是final的方法）</p>
+</blockquote>
+<p>发布对象的几种方法：</p>
+<ul>
+<li>将对象的引用保存在共有的静态变量中</li>
+<li>当发布一个对象时，对象的非私有域中引用的对象同样会被发布</li>
+<li>发布一个内部的类实例。（非静态内部类对隐式的含有外部类的this引用）</li>
+</ul>
+<p>构造方法经常会导致this隐性逸出。如</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThisEscape</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">ThisEscape</span><span class="params">(EventSource eventSource)</span> </span>&#123;</span><br><span class="line">		source.registerListener(</span><br><span class="line">            <span class="keyword">new</span> EventListener()&#123;</span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onEvent</span><span class="params">(Event e)</span> </span>&#123;</span><br><span class="line">                    doSomething(e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        )</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ThisEscape</code>发布EventSource时，也隐含发布了ThisEscape对象本身，因为这个内部类的实例中包含了对ThisEscape实例的隐式引用。</p>
+<blockquote>
+<p>不要在构造函数中使this引用逸出。（只有构造函数返回时，this引用才应该从线程中逸出）</p>
+</blockquote>
+<ul>
+<li>在构造函数中创建一个线程，无论是显式（传入线程）创建还是隐式（对象的内部类）创建，this引用都会被该线程共享。在构造函数中创建线程没有问题，但最好不要立即启动他，而是通过start或initialize方法来启动。</li>
+<li>在构造函数调用一个可改写的实例方法（非private/final方法）同样会使得this在构造过程逸出。</li>
+</ul>
+<p>如果想在构造函数中注册一个事件监听器或启动线程，那么可以使用一个私有的构造函数和一个公有的工厂方法来避免不正确的构造过程。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SafeListener</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> EventListener listener;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">SafeListener</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        listenr = <span class="keyword">new</span> EventListener() &#123;</span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onEvent</span><span class="params">(Event e)</span> </span>&#123;</span><br><span class="line">                doSomething(e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> SafeListener <span class="title">newInstance</span><span class="params">(EventSource source)</span> </span>&#123;</span><br><span class="line">        SafeListener safe = <span class="keyword">new</span> SafeListener();</span><br><span class="line">        source.registerListener(safe.listener);</span><br><span class="line">        <span class="keyword">return</span> safe;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="线程封闭（Thread-Confinement）"><a href="#线程封闭（Thread-Confinement）" class="headerlink" title="线程封闭（Thread Confinement）"></a>线程封闭（Thread Confinement）</h3><p>仅在单个线程内访问数据，就不需要同步，这就是<strong>线程封闭</strong></p>
+<p>如：JDBC的Connection对象就是线程封闭技术的一种应用。</p>
+<blockquote>
+<p>JAVA语言没法强制将对象封闭在某个线程中。只是提供了一些机制来帮助维持线程的封闭性，例如局部变量和ThreadLocal类。但是，仍然由程序员自己确保线程中的对象不会逸出。</p>
+</blockquote>
+<h4 id="Ad-hoc线程封闭"><a href="#Ad-hoc线程封闭" class="headerlink" title="Ad-hoc线程封闭"></a>Ad-hoc线程封闭</h4><p>Ad-hoc线程封闭是指，维护线程封闭性的职责完全由程序实现来承担。</p>
+<h4 id="栈封闭"><a href="#栈封闭" class="headerlink" title="栈封闭"></a>栈封闭</h4><p>栈封闭是线程封闭的一种特例，在栈封闭中，只能通过局部变量才能访问对象。</p>
+<h4 id="ThreadLocal类"><a href="#ThreadLocal类" class="headerlink" title="ThreadLocal类"></a>ThreadLocal类</h4><p>ThreadLocal提供了get、set方法，这些方法为每个使用改变量的线程都有一份独立的副本，因此get总是返回由当前线程在调用set设置的最新值。ThreadLocal对象通常用于防止对可变的单实例变量或全局变量进行共享。</p>
+<p>如果需要将一个单线程应用程序移植到多线程环境中，通过将共享的全局变量转换为ThreadLocal对象，可以维持线程安全性。</p>
+<p>应用程序框架中大量使用了ThreadLocal。如，EJB调用期间，J2EE容器需要将一个事务上下文与某个线程关联起来。通过将事务上下文保存在静态的ThreadLocal对象中，可以很容易的实现这个功能：当框架代码需要判断当前运行的是哪个事务时，只需要从这个ThreadLocal对象中读取事务上下文。</p>
+<blockquote>
+<p>ThreadLocal变量类似于全局变量，他会降低代码的可重用性并在类之间引入隐含的耦合性，在使用时要格外小心。</p>
+</blockquote>
+<h3 id="不变性"><a href="#不变性" class="headerlink" title="不变性"></a>不变性</h3><p>满足同步需求的另一种办法是使用不可变对象。不可变对象一定是线程安全的。</p>
+<p>当满足以下条件时，对象才是不可变的：</p>
+<ul>
+<li>对象创建后其状态就不能修改</li>
+<li>对象的所有域都是final类型（技术上不一定，如String）</li>
+<li>对象是正确创建的（构造时，this没有逸出）</li>
+</ul>
+<blockquote>
+<p>除非需要某个域是可变的，否则应将其声明为final域。</p>
+</blockquote>
+<p>每当需要对一组相关数据以原子方式执行某个操作时，就可以考虑创建一个不可变类来包含这些数据。如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Immutable</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">OneValueCache</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> BigInteger lastNumber;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> BigInteger lastFactors;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">OneValueCache</span><span class="params">(BigInteger i, BigInteger[] factors)</span> </span>&#123;</span><br><span class="line">        lastNumber = i;</span><br><span class="line">        lastFactors = Arrays.copyOf(factors, factors.length);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> BigInteger[] getFactors(BigInteger i) &#123;</span><br><span class="line">        <span class="keyword">if</span> (lastNumber == <span class="keyword">null</span> || !lastNumber.equals(i))</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="keyword">return</span> Arrays.copyOf(lastFactors, lastFactors.length);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="安全发布"><a href="#安全发布" class="headerlink" title="安全发布"></a>安全发布</h3><p>前面几节是关于如何确保对象不被发布，这一节是关于如何安全发布，安全的在多个线程间共享对象。</p>
+<h4 id="不正确发布的例子"><a href="#不正确发布的例子" class="headerlink" title="不正确发布的例子"></a>不正确发布的例子</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Holder</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> n;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Holder</span><span class="params">(<span class="keyword">int</span> n)</span> </span>&#123; <span class="keyword">this</span>.n = n; &#125;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">assertSanity</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 有可能会抛出异常</span></span><br><span class="line">        <span class="keyword">if</span> (n!=n)</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> AssertionError(<span class="string">&quot;This statement is false.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于没有使用同步来确保Holder对象对其他线程可见，因此Holder对象未被正确发布。</p>
+<h4 id="不可变对象"><a href="#不可变对象" class="headerlink" title="不可变对象"></a>不可变对象</h4><p>任何线程都可以在不需要额外同步的情况下安全地访问不可变对象，即使在发布这些对象时没有使用同步。</p>
+<p>如果final类型的域所指向的是可变对象，那么在访问这些域所指向的对象的状态时仍然需要同步。</p>
+<h4 id="安全发布的常用模式"><a href="#安全发布的常用模式" class="headerlink" title="安全发布的常用模式"></a>安全发布的常用模式</h4><p>下面介绍的安全发布主要在于对象发布后的可见性及对可见性修改。</p>
+<p>要安全的发布一个对象，对象的引用及状态必须同时对其他线程可见。一个正确构造的对象可以通过下面的方式安全发布：</p>
+<ul>
+<li>在静态初始化函数中初始化一个对象引用（<code>private static Holder holder = new Holder(42);</code>）<ul>
+<li>静态初始化器由JVM在类的初始化阶段执行。由于在JVM内部存在同步机制，通过这种方式初始化的对象都可以安全发布。</li>
+</ul>
+</li>
+<li>将对象的引用保存在volatile或者AtomicReferance对象中</li>
+<li>将对象的引用保存在某个正确构造对象的final域中</li>
+<li>将对象的引用保存在一个由锁保护的域中（如线程安全容器，synchronizedList等）</li>
+</ul>
+<blockquote>
+<p>在没有额外同步的情况下，任何线程都可以安全的使用被安全发布的事实不可变对象。</p>
+</blockquote>
+<h4 id="可变对象"><a href="#可变对象" class="headerlink" title="可变对象"></a>可变对象</h4><p>对象发布的需求取决于他的可变性：</p>
+<ul>
+<li>不可变对象可以通过任意机制发布</li>
+<li>事实不可变对象必须通过安全方式发布</li>
+<li>可变对象必须通过安全方式发布，并且必须是线程安全的或者由某个锁保护起来。</li>
+</ul>
+<h4 id="安全的共享对象"><a href="#安全的共享对象" class="headerlink" title="安全的共享对象"></a>安全的共享对象</h4><p>在并发程序汇总使用和共享对象时，可以使用一些策略：</p>
+<ul>
+<li><strong>线程封闭</strong>  线程封闭的对象只能由一个线程拥有，只能由该线程修改。</li>
+<li><strong>只读共享</strong>  在没有额外同步的情况下，共享的只读对象可以由多个线程并发访问，但任何线程都不能修改。共享的只读对象包括不可变对象和事实不可变对象。</li>
+<li><strong>线程安全共享</strong>  线程安全的对象在其内部实现同步，因此多个线程对象可以通过对象的公有接口来进行访问而不需要进一步同步。</li>
+<li><strong>保护对象</strong>  被保护的对象只能通过持有特定的锁来访问。保护对象包括封装在其他线程安全对象中的对象，以及已发布的并且由某个特定锁保护的对象。</li>
+</ul>
 
     </div>
 
@@ -444,7 +549,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%B5%85%E8%B0%88%E5%A4%9A%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">一、浅谈多线程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 多线程的优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%BA%BF%E7%A8%8B%E7%9A%84%E9%A3%8E%E9%99%A9"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 线程的风险</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7"><span class="nav-number">2.</span> <span class="nav-text">二、线程安全性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%8E%9F%E5%AD%90%E6%80%A7"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 原子性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AB%9E%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">竞态条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%B6%E8%BF%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%AD%E7%9A%84%E7%AB%9E%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.2.2.</span> <span class="nav-text">延迟初始化中的竞态条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E6%93%8D%E4%BD%9C"><span class="nav-number">2.2.3.</span> <span class="nav-text">复合操作</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E9%94%81%E6%9C%BA%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 锁机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E9%94%81"><span class="nav-number">2.3.1.</span> <span class="nav-text">内置锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E5%85%A5"><span class="nav-number">2.3.2.</span> <span class="nav-text">重入</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">2.3.3.</span> <span class="nav-text">锁的使用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E6%B4%BB%E8%B7%83%E6%80%A7%E4%B8%8E%E6%80%A7%E8%83%BD"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 活跃性与性能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%85%B1%E4%BA%AB"><span class="nav-number">3.</span> <span class="nav-text">三、对象的共享</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 可见性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E9%9D%9E%E5%8E%9F%E5%AD%90%E7%9A%8464%E4%BD%8D%E6%93%8D%E4%BD%9C"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 非原子的64位操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E5%8A%A0%E9%94%81%E4%B8%8E%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 加锁与可见性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-volatile"><span class="nav-number">3.4.</span> <span class="nav-text">3.4 volatile</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%B5%85%E8%B0%88%E5%A4%9A%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">一、浅谈多线程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="nav-number">1.1.</span> <span class="nav-text">1.1 多线程的优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%BA%BF%E7%A8%8B%E7%9A%84%E9%A3%8E%E9%99%A9"><span class="nav-number">1.2.</span> <span class="nav-text">1.2 线程的风险</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E6%80%A7"><span class="nav-number">2.</span> <span class="nav-text">二、线程安全性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AE%9A%E4%B9%89"><span class="nav-number">2.1.</span> <span class="nav-text">2.1 定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%8E%9F%E5%AD%90%E6%80%A7"><span class="nav-number">2.2.</span> <span class="nav-text">2.2 原子性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AB%9E%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.2.1.</span> <span class="nav-text">竞态条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%B6%E8%BF%9F%E5%88%9D%E5%A7%8B%E5%8C%96%E4%B8%AD%E7%9A%84%E7%AB%9E%E6%80%81%E6%9D%A1%E4%BB%B6"><span class="nav-number">2.2.2.</span> <span class="nav-text">延迟初始化中的竞态条件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E6%93%8D%E4%BD%9C"><span class="nav-number">2.2.3.</span> <span class="nav-text">复合操作</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E9%94%81%E6%9C%BA%E5%88%B6"><span class="nav-number">2.3.</span> <span class="nav-text">2.3 锁机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E9%94%81"><span class="nav-number">2.3.1.</span> <span class="nav-text">内置锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%87%8D%E5%85%A5"><span class="nav-number">2.3.2.</span> <span class="nav-text">重入</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%94%81%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="nav-number">2.3.3.</span> <span class="nav-text">锁的使用</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E6%B4%BB%E8%B7%83%E6%80%A7%E4%B8%8E%E6%80%A7%E8%83%BD"><span class="nav-number">2.4.</span> <span class="nav-text">2.4 活跃性与性能</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%85%B1%E4%BA%AB"><span class="nav-number">3.</span> <span class="nav-text">三、对象的共享</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="nav-number">3.1.</span> <span class="nav-text">3.1 可见性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E9%9D%9E%E5%8E%9F%E5%AD%90%E7%9A%8464%E4%BD%8D%E6%93%8D%E4%BD%9C"><span class="nav-number">3.2.</span> <span class="nav-text">3.2 非原子的64位操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E5%8A%A0%E9%94%81%E4%B8%8E%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="nav-number">3.3.</span> <span class="nav-text">3.3 加锁与可见性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-volatile"><span class="nav-number">3.4.</span> <span class="nav-text">3.4 volatile</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%91%E5%B8%83%E4%B8%8E%E9%80%B8%E5%87%BA-publish-and-escape"><span class="nav-number">3.5.</span> <span class="nav-text">发布与逸出(publish and escape)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%B0%81%E9%97%AD%EF%BC%88Thread-Confinement%EF%BC%89"><span class="nav-number">3.6.</span> <span class="nav-text">线程封闭（Thread Confinement）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Ad-hoc%E7%BA%BF%E7%A8%8B%E5%B0%81%E9%97%AD"><span class="nav-number">3.6.1.</span> <span class="nav-text">Ad-hoc线程封闭</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%88%E5%B0%81%E9%97%AD"><span class="nav-number">3.6.2.</span> <span class="nav-text">栈封闭</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ThreadLocal%E7%B1%BB"><span class="nav-number">3.6.3.</span> <span class="nav-text">ThreadLocal类</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%8F%98%E6%80%A7"><span class="nav-number">3.7.</span> <span class="nav-text">不变性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E5%8F%91%E5%B8%83"><span class="nav-number">3.8.</span> <span class="nav-text">安全发布</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8D%E6%AD%A3%E7%A1%AE%E5%8F%91%E5%B8%83%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">3.8.1.</span> <span class="nav-text">不正确发布的例子</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8D%E5%8F%AF%E5%8F%98%E5%AF%B9%E8%B1%A1"><span class="nav-number">3.8.2.</span> <span class="nav-text">不可变对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E5%8F%91%E5%B8%83%E7%9A%84%E5%B8%B8%E7%94%A8%E6%A8%A1%E5%BC%8F"><span class="nav-number">3.8.3.</span> <span class="nav-text">安全发布的常用模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AF%E5%8F%98%E5%AF%B9%E8%B1%A1"><span class="nav-number">3.8.4.</span> <span class="nav-text">可变对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E5%85%A8%E7%9A%84%E5%85%B1%E4%BA%AB%E5%AF%B9%E8%B1%A1"><span class="nav-number">3.8.5.</span> <span class="nav-text">安全的共享对象</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
